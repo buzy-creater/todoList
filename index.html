@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>日常チェックリスト</title>
+
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      background: #f4f5f7;
+      padding: 24px;
+      color: #222;
+    }
+
+    .app {
+      max-width: 520px;
+      margin: 0 auto;
+      background: #fff;
+      padding: 24px;
+      border-radius: 18px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    }
+
+    h1 {
+      text-align: center;
+      margin: 0 0 24px;
+      font-size: 24px;
+    }
+
+    .check-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: grid;
+      gap: 12px;
+    }
+
+    .check-item {
+      border: 1px solid #ddd;
+      border-radius: 14px;
+      padding: 14px 16px;
+      background: #fafafa;
+      transition: 0.2s;
+    }
+
+    .check-item.checked {
+      background: #e9f7ef;
+      border-color: #8fd19e;
+    }
+
+    .check-row {
+      display: grid;
+      grid-template-columns: 28px 1fr auto;
+      align-items: center;
+      gap: 12px;
+    }
+
+    input[type="checkbox"] {
+      width: 22px;
+      height: 22px;
+      accent-color: #2f8f46;
+      cursor: pointer;
+    }
+
+    label {
+      font-size: 17px;
+      cursor: pointer;
+    }
+
+    .checked-time {
+      margin: 8px 0 0 40px;
+      min-height: 18px;
+      font-size: 13px;
+      color: #555;
+    }
+
+    .delete-button {
+      border: none;
+      border-radius: 8px;
+      background: #ddd;
+      color: #333;
+      padding: 6px 10px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    .add-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 18px;
+    }
+
+    .add-item input {
+      flex: 1;
+      min-width: 0;
+      height: 44px;
+      padding: 0 12px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      font-size: 16px;
+      box-sizing: border-box;
+    }
+
+    .add-item button,
+    .reset {
+      border: none;
+      border-radius: 10px;
+      background: #222;
+      color: white;
+      cursor: pointer;
+      font-size: 15px;
+    }
+
+    .add-item button {
+      flex-shrink: 0;
+      width: 72px;
+      height: 44px;
+      padding: 0;
+    }
+
+    .reset {
+      width: 100%;
+      margin-top: 16px;
+      padding: 12px;
+    }
+
+    @media (max-width: 420px) {
+      body {
+        padding: 16px;
+      }
+
+      .app {
+        padding: 20px;
+      }
+
+      label {
+        font-size: 16px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app">
+    <h1 id="page-title"></h1>
+
+    <ul class="check-list" id="check-list">
+      <li class="check-item">
+        <div class="check-row">
+          <input type="checkbox" id="drink-protein">
+          <label for="drink-protein">プロテインを飲む</label>
+          <span></span>
+        </div>
+        <p id="drink-protein-time" class="checked-time"></p>
+      </li>
+    </ul>
+
+    <div class="add-item">
+      <input type="text" id="new-item-name" placeholder="新しい確認項目を入力">
+      <button type="button" id="add-item-button">追加</button>
+    </div>
+
+    <button class="reset" type="button" onclick="resetChecks()">
+      チェックをリセット
+    </button>
+  </div>
+
+  <script>
+    const STORAGE_KEY = "dailyCheckAppData";
+    const FIXED_ITEM_IDS = ["drink-protein"];
+
+    let itemCounter = 0;
+    let customItems = [];
+
+    function formatDate(date) {
+      return (
+        date.getFullYear() + "/" +
+        String(date.getMonth() + 1).padStart(2, "0") + "/" +
+        String(date.getDate()).padStart(2, "0") + " " +
+        String(date.getHours()).padStart(2, "0") + ":" +
+        String(date.getMinutes()).padStart(2, "0")
+      );
+    }
+
+    function formatTodayTitle(date) {
+      return (
+        date.getFullYear() + "年" +
+        String(date.getMonth() + 1).padStart(2, "0") + "月" +
+        String(date.getDate()).padStart(2, "0") + "日 やること"
+      );
+    }
+
+    function setPageTitle() {
+      document.getElementById("page-title").textContent = formatTodayTitle(new Date());
+    }
+
+    function getSavedData() {
+      const savedData = localStorage.getItem(STORAGE_KEY);
+
+      if (!savedData) {
+        return {
+          checks: {},
+          customItems: []
+        };
+      }
+
+      return JSON.parse(savedData);
+    }
+
+    function saveData() {
+      const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+      const checks = {};
+
+      checkboxes.forEach((checkbox) => {
+        const timeElement = document.getElementById(`${checkbox.id}-time`);
+
+        checks[checkbox.id] = {
+          checked: checkbox.checked,
+          time: timeElement ? timeElement.textContent : ""
+        };
+      });
+
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({
+          checks: checks,
+          customItems: customItems
+        })
+      );
+    }
+
+    function updateItemStyle(checkbox) {
+      const item = checkbox.closest(".check-item");
+
+      if (checkbox.checked) {
+        item.classList.add("checked");
+      } else {
+        item.classList.remove("checked");
+      }
+    }
+
+    function updateCheckTime(checkboxId, timeId) {
+      const checkbox = document.getElementById(checkboxId);
+      const timeElement = document.getElementById(timeId);
+
+      checkbox.addEventListener("change", () => {
+        if (checkbox.checked) {
+          timeElement.textContent = "完了：" + formatDate(new Date());
+        } else {
+          timeElement.textContent = "";
+        }
+
+        updateItemStyle(checkbox);
+        saveData();
+      });
+    }
+
+    function addCheckItem(name, savedId) {
+      itemCounter++;
+
+      const id = savedId || `custom-item-${itemCounter}`;
+
+      const li = document.createElement("li");
+      li.className = "check-item";
+      li.dataset.itemId = id;
+
+      li.innerHTML = `
+        <div class="check-row">
+          <input type="checkbox" id="${id}">
+          <label for="${id}">${name}</label>
+          <button type="button" class="delete-button">削除</button>
+        </div>
+        <p id="${id}-time" class="checked-time"></p>
+      `;
+
+      document.getElementById("check-list").appendChild(li);
+
+      updateCheckTime(id, `${id}-time`);
+
+      li.querySelector(".delete-button").addEventListener("click", () => {
+        deleteCustomItem(id);
+      });
+
+      return id;
+    }
+
+    function deleteCustomItem(id) {
+      const targetItem = document.querySelector(`[data-item-id="${id}"]`);
+
+      if (!targetItem) {
+        return;
+      }
+
+      if (!confirm("この項目を削除しますか？")) {
+        return;
+      }
+
+      targetItem.remove();
+
+      customItems = customItems.filter((item) => {
+        return item.id !== id;
+      });
+
+      saveData();
+    }
+
+    function restoreData() {
+      const data = getSavedData();
+
+      customItems = data.customItems || [];
+
+      customItems.forEach((item) => {
+        addCheckItem(item.name, item.id);
+      });
+
+      Object.keys(data.checks || {}).forEach((checkboxId) => {
+        if (!FIXED_ITEM_IDS.includes(checkboxId) && !checkboxId.startsWith("custom-item-")) {
+          return;
+        }
+
+        const checkbox = document.getElementById(checkboxId);
+        const timeElement = document.getElementById(`${checkboxId}-time`);
+
+        if (!checkbox || !timeElement) {
+          return;
+        }
+
+        checkbox.checked = data.checks[checkboxId].checked;
+        timeElement.textContent = data.checks[checkboxId].time;
+
+        updateItemStyle(checkbox);
+      });
+
+      saveData();
+    }
+
+    function resetChecks() {
+      const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+
+      checkboxes.forEach((checkbox) => {
+        checkbox.checked = false;
+        updateItemStyle(checkbox);
+      });
+
+      document.querySelectorAll(".checked-time").forEach((time) => {
+        time.textContent = "";
+      });
+
+      saveData();
+    }
+
+    document.getElementById("add-item-button").addEventListener("click", () => {
+      const input = document.getElementById("new-item-name");
+      const name = input.value.trim();
+
+      if (!name) {
+        return;
+      }
+
+      const id = addCheckItem(name);
+
+      customItems.push({
+        id: id,
+        name: name
+      });
+
+      input.value = "";
+
+      saveData();
+    });
+
+    setPageTitle();
+
+    updateCheckTime("drink-protein", "drink-protein-time");
+
+    restoreData();
+  </script>
+</body>
+</html>
