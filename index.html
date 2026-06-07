@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>日常チェックリスト</title>
+  <title>今日やることリスト</title>
 
   <style>
     body {
@@ -144,7 +144,7 @@
 
 <body>
   <div class="app">
-    <h1 id="page-title"></h1>
+    <h1 id="page-title">今日やることリスト</h1>
 
     <ul class="check-list" id="check-list">
       <li class="check-item">
@@ -190,10 +190,6 @@
         String(date.getMonth() + 1).padStart(2, "0") + "月" +
         String(date.getDate()).padStart(2, "0") + "日 やること"
       );
-    }
-
-    function setPageTitle() {
-      document.getElementById("page-title").textContent = formatTodayTitle(new Date());
     }
 
     function getSavedData() {
@@ -370,8 +366,6 @@
 
       saveData();
     });
-
-    setPageTitle();
 
     updateCheckTime("drink-protein", "drink-protein-time");
 
