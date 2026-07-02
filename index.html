@@ -6,26 +6,83 @@
   <title>今日やることリスト</title>
 
   <style>
+    :root {
+      --bg: #f2f2f7;
+      --card: rgba(255, 255, 255, 0.92);
+      --text: #1c1c1e;
+      --subtext: #6e6e73;
+      --line: #e5e5ea;
+      --blue: #007aff;
+      --green: #34c759;
+      --red-soft: #fff1f0;
+      --red: #ff3b30;
+      --yellow-soft: #fff8e1;
+      --yellow: #ff9500;
+      --gray-soft: #f4f4f6;
+      --gray: #8e8e93;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
     body {
-      font-family: system-ui, sans-serif;
-      background: #f4f5f7;
-      padding: 24px;
-      color: #222;
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(0, 122, 255, 0.13), transparent 32%),
+        var(--bg);
+      padding: 32px 18px;
+      color: var(--text);
     }
 
     .app {
-      max-width: 520px;
+      max-width: 640px;
       margin: 0 auto;
-      background: #fff;
-      padding: 24px;
-      border-radius: 18px;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    }
+
+    .app-header {
+      margin-bottom: 18px;
     }
 
     h1 {
-      text-align: center;
-      margin: 0 0 24px;
-      font-size: 24px;
+      margin: 0;
+      font-size: clamp(28px, 7vw, 38px);
+      letter-spacing: -0.04em;
+      font-weight: 800;
+    }
+
+    .subtitle {
+      margin: 8px 0 0;
+      color: var(--subtext);
+      font-size: 14px;
+    }
+
+    .filter-area {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 4px;
+      margin-bottom: 16px;
+      padding: 4px;
+      border-radius: 14px;
+      background: rgba(118, 118, 128, 0.12);
+    }
+
+    .filter-button {
+      border: none;
+      border-radius: 11px;
+      background: transparent;
+      color: var(--text);
+      padding: 9px 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: 0.18s ease;
+    }
+
+    .filter-button.active {
+      background: #fff;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.10);
     }
 
     .check-list {
@@ -33,110 +90,275 @@
       padding: 0;
       margin: 0;
       display: grid;
-      gap: 12px;
+      gap: 8px;
     }
 
     .check-item {
-      border: 1px solid #ddd;
-      border-radius: 14px;
-      padding: 14px 16px;
-      background: #fafafa;
-      transition: 0.2s;
+      background: var(--card);
+      border: 1px solid rgba(255, 255, 255, 0.75);
+      border-radius: 16px;
+      padding: 12px 14px;
+      box-shadow: 0 8px 26px rgba(0, 0, 0, 0.06);
+      backdrop-filter: blur(18px);
+      transition: transform 0.18s ease, opacity 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    .check-item:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
     }
 
     .check-item.checked {
-      background: #e9f7ef;
-      border-color: #8fd19e;
+      opacity: 0.68;
+      box-shadow: none;
+    }
+
+    .check-item.checked .task-name {
+      color: var(--subtext);
+      text-decoration: line-through;
+      text-decoration-thickness: 2px;
+    }
+
+    .check-item.hidden {
+      display: none;
     }
 
     .check-row {
       display: grid;
-      grid-template-columns: 28px 1fr auto;
+      grid-template-columns: 30px 1fr auto;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
     }
 
     input[type="checkbox"] {
-      width: 22px;
+      appearance: none;
+      width: 24px;
+      height: 24px;
+      margin: 0;
+      border: 2px solid #c7c7cc;
+      border-radius: 50%;
+      background: #fff;
+      cursor: pointer;
+      position: relative;
+    }
+
+    input[type="checkbox"]:checked {
+      background: var(--green);
+      border-color: var(--green);
+    }
+
+    input[type="checkbox"]:checked::after {
+      content: "";
+      position: absolute;
+      left: 7px;
+      top: 3px;
+      width: 6px;
+      height: 11px;
+      border: solid #fff;
+      border-width: 0 2px 2px 0;
+      transform: rotate(45deg);
+    }
+
+    .task-main {
+      min-width: 0;
+    }
+
+    .task-title-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .task-name {
+      font-size: 16px;
+      font-weight: 700;
+      line-height: 1.35;
+      word-break: break-word;
+      cursor: pointer;
+    }
+
+    .priority-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 30px;
       height: 22px;
-      accent-color: #2f8f46;
-      cursor: pointer;
+      padding: 0 9px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.02em;
     }
 
-    label {
-      font-size: 17px;
-      cursor: pointer;
+    .priority-badge.priority-a {
+      background: var(--red-soft);
+      color: var(--red);
     }
 
-    .checked-time {
-      margin: 8px 0 0 40px;
-      min-height: 18px;
-      font-size: 13px;
-      color: #555;
+    .priority-badge.priority-b {
+      background: var(--yellow-soft);
+      color: var(--yellow);
+    }
+
+    .priority-badge.priority-c {
+      background: var(--gray-soft);
+      color: var(--gray);
+    }
+
+    .task-meta-line {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 2px;
+      font-size: 12px;
+      color: var(--subtext);
     }
 
     .delete-button {
       border: none;
-      border-radius: 8px;
-      background: #ddd;
-      color: #333;
-      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(118, 118, 128, 0.12);
+      color: var(--subtext);
+      padding: 6px 9px;
       cursor: pointer;
-      font-size: 13px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .delete-button:hover {
+      background: #ffe5e5;
+      color: var(--red);
+    }
+
+    .meta-row {
+      display: none;
+    }
+
+    .meta-field {
+      display: grid;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--subtext);
+    }
+
+    .meta-field select,
+    .meta-field input[type="date"] {
+      width: 100%;
+      min-width: 0;
+      height: 38px;
+      padding: 0 12px;
+      border: none;
+      border-radius: 11px;
+      background: rgba(118, 118, 128, 0.12);
+      color: var(--text);
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .checked-time {
+      display: none;
+    }
+
+    .input-card {
+      margin-top: 18px;
+      padding: 14px;
+      border-radius: 20px;
+      background: var(--card);
+      box-shadow: 0 8px 26px rgba(0, 0, 0, 0.06);
     }
 
     .add-item {
-      display: flex;
+      display: grid;
+      grid-template-columns: 1fr 112px 150px auto;
       align-items: center;
       gap: 8px;
-      margin-top: 18px;
     }
 
-    .add-item input {
-      flex: 1;
+    .add-item input,
+    .add-item select {
+      width: 100%;
       min-width: 0;
       height: 44px;
-      padding: 0 12px;
-      border: 1px solid #ccc;
-      border-radius: 10px;
-      font-size: 16px;
-      box-sizing: border-box;
+      padding: 0 13px;
+      border: none;
+      border-radius: 13px;
+      font-size: 15px;
+      background: rgba(118, 118, 128, 0.12);
+      color: var(--text);
     }
 
     .add-item button,
     .reset {
       border: none;
-      border-radius: 10px;
-      background: #222;
+      border-radius: 13px;
+      background: var(--blue);
       color: white;
       cursor: pointer;
       font-size: 15px;
+      font-weight: 800;
     }
 
     .add-item button {
-      flex-shrink: 0;
-      width: 72px;
       height: 44px;
-      padding: 0;
+      padding: 0 18px;
     }
 
     .reset {
       width: 100%;
-      margin-top: 16px;
-      padding: 12px;
+      margin-top: 10px;
+      padding: 13px;
+      background: rgba(118, 118, 128, 0.14);
+      color: var(--text);
     }
 
-    @media (max-width: 420px) {
+    .empty-message {
+      display: none;
+      text-align: center;
+      color: var(--subtext);
+      padding: 26px 0 8px;
+      font-size: 14px;
+    }
+
+    .empty-message.visible {
+      display: block;
+    }
+
+    @media (max-width: 680px) {
       body {
-        padding: 16px;
+        padding: 24px 14px;
       }
 
-      .app {
-        padding: 20px;
+      .add-item {
+        grid-template-columns: 1fr 1fr;
       }
 
-      label {
-        font-size: 16px;
+      #new-item-name,
+      #add-item-button {
+        grid-column: 3/1;
+      }
+
+      
+
+      .add-item button {
+        width: 100%;
+      }
+    }
+
+    @media (max-width: 430px) {
+      .check-row {
+        grid-template-columns: 30px 1fr;
+      }
+
+      .delete-button {
+        grid-column: 2;
+        justify-self: start;
+      }
+
+      .meta-row {
+        grid-template-columns: 1fr;
       }
     }
   </style>
@@ -144,27 +366,52 @@
 
 <body>
   <div class="app">
-    <h1 id="page-title">今日やることリスト</h1>
+    <header class="app-header">
+      <h1 id="page-title">今日やることリスト</h1>
+      <p class="subtitle">優先度と期限を見ながら、今日やることをサクッと整理。</p>
+    </header>
+
+    <div class="filter-area" aria-label="タスクの絞り込み">
+      <button type="button" class="filter-button active" data-filter="all">すべて</button>
+      <button type="button" class="filter-button" data-filter="incomplete">未達成</button>
+      <button type="button" class="filter-button" data-filter="completed">達成済み</button>
+    </div>
 
     <ul class="check-list" id="check-list">
-      <li class="check-item">
+      <li class="check-item" data-item-id="drink-protein" data-priority="B" data-due-date="">
         <div class="check-row">
           <input type="checkbox" id="drink-protein">
-          <label for="drink-protein">プロテインを飲む</label>
+          <div class="task-main">
+            <div class="task-title-row">
+              <label for="drink-protein" class="task-name">勤怠チェック</label>
+              <span class="priority-badge priority-b" id="drink-protein-priority-badge">B</span>
+            </div>
+            <div class="task-meta-line" id="drink-protein-summary">毎日</div>
+          </div>
           <span></span>
         </div>
         <p id="drink-protein-time" class="checked-time"></p>
       </li>
     </ul>
 
-    <div class="add-item">
-      <input type="text" id="new-item-name" placeholder="新しい確認項目を入力">
-      <button type="button" id="add-item-button">追加</button>
-    </div>
+    <p class="empty-message" id="empty-message">表示できるタスクがありません。</p>
 
-    <button class="reset" type="button" onclick="resetChecks()">
-      チェックをリセット
-    </button>
+    <div class="input-card">
+      <div class="add-item">
+        <input type="text" id="new-item-name" placeholder="新しいタスクを入力">
+        <select id="new-item-priority" aria-label="優先度">
+          <option value="A">優先度A</option>
+          <option value="B" selected>優先度B</option>
+          <option value="C">優先度C</option>
+        </select>
+        <input type="date" id="new-item-due-date" aria-label="期限">
+        <button type="button" id="add-item-button">追加</button>
+      </div>
+
+      <button class="reset" type="button" onclick="resetChecks()">
+        チェックをリセット
+      </button>
+    </div>
   </div>
 
   <script>
@@ -173,6 +420,7 @@
 
     let itemCounter = 0;
     let customItems = [];
+    let currentFilter = "all";
 
     function formatDate(date) {
       return (
@@ -192,17 +440,39 @@
       );
     }
 
+    function formatDueDate(value) {
+      if (!value) {
+        return "期限なし";
+      }
+
+      const parts = value.split("-");
+      if (parts.length !== 3) {
+        return "期限：" + value;
+      }
+
+      return "期限：" + Number(parts[1]) + "/" + Number(parts[2]);
+    }
+
     function getSavedData() {
       const savedData = localStorage.getItem(STORAGE_KEY);
 
       if (!savedData) {
         return {
           checks: {},
-          customItems: []
+          customItems: [],
+          filter: "all"
         };
       }
 
-      return JSON.parse(savedData);
+      try {
+        return JSON.parse(savedData);
+      } catch (error) {
+        return {
+          checks: {},
+          customItems: [],
+          filter: "all"
+        };
+      }
     }
 
     function saveData() {
@@ -211,10 +481,13 @@
 
       checkboxes.forEach((checkbox) => {
         const timeElement = document.getElementById(`${checkbox.id}-time`);
+        const itemElement = checkbox.closest(".check-item");
 
         checks[checkbox.id] = {
           checked: checkbox.checked,
-          time: timeElement ? timeElement.textContent : ""
+          time: timeElement ? timeElement.textContent : "",
+          priority: itemElement ? itemElement.dataset.priority || "B" : "B",
+          dueDate: itemElement ? itemElement.dataset.dueDate || "" : ""
         };
       });
 
@@ -222,9 +495,26 @@
         STORAGE_KEY,
         JSON.stringify({
           checks: checks,
-          customItems: customItems
+          customItems: customItems,
+          filter: currentFilter
         })
       );
+    }
+
+    function updatePriorityBadge(id) {
+      const itemElement = document.querySelector(`[data-item-id="${id}"]`);
+      const badge = document.getElementById(`${id}-priority-badge`);
+      const summary = document.getElementById(`${id}-summary`);
+
+      if (!itemElement || !badge || !summary) {
+        return;
+      }
+
+      const priority = itemElement.dataset.priority || "B";
+      const dueDate = itemElement.dataset.dueDate || "";
+      badge.textContent = priority;
+      badge.className = `priority-badge priority-${priority.toLowerCase()}`;
+      summary.textContent = formatDueDate(dueDate);
     }
 
     function updateItemStyle(checkbox) {
@@ -237,10 +527,40 @@
       }
     }
 
-    function updateCheckTime(checkboxId, timeId) {
-      const checkbox = document.getElementById(checkboxId);
-      const timeElement = document.getElementById(timeId);
+    function applyFilter() {
+      const items = document.querySelectorAll(".check-item");
+      let visibleCount = 0;
 
+      items.forEach((item) => {
+        const checkbox = item.querySelector('input[type="checkbox"]');
+        const shouldHide =
+          (currentFilter === "completed" && !checkbox.checked) ||
+          (currentFilter === "incomplete" && checkbox.checked);
+
+        item.classList.toggle("hidden", shouldHide);
+
+        if (!shouldHide) {
+          visibleCount++;
+        }
+      });
+
+      document.getElementById("empty-message").classList.toggle("visible", visibleCount === 0);
+    }
+
+    function setFilter(filter) {
+      currentFilter = filter;
+
+      document.querySelectorAll(".filter-button").forEach((button) => {
+        button.classList.toggle("active", button.dataset.filter === filter);
+      });
+
+      applyFilter();
+      saveData();
+    }
+
+    function setupItemEvents(id) {
+      const checkbox = document.getElementById(id);
+      const timeElement = document.getElementById(`${id}-time`);
       checkbox.addEventListener("change", () => {
         if (checkbox.checked) {
           timeElement.textContent = "完了：" + formatDate(new Date());
@@ -249,35 +569,132 @@
         }
 
         updateItemStyle(checkbox);
+        applyFilter();
         saveData();
+      });
+
+      updatePriorityBadge(id);
+    }
+
+    function updateCustomItemMeta(id) {
+      customItems = customItems.map((item) => {
+        if (item.id !== id) {
+          return item;
+        }
+
+        const itemElement = document.querySelector(`[data-item-id="${id}"]`);
+
+        return {
+          ...item,
+          priority: itemElement ? itemElement.dataset.priority || "B" : "B",
+          dueDate: itemElement ? itemElement.dataset.dueDate || "" : ""
+        };
       });
     }
 
-    function addCheckItem(name, savedId) {
+    function createMetaFields(id, priority, dueDate) {
+      const metaRow = document.createElement("div");
+      metaRow.className = "meta-row";
+
+      const priorityLabel = document.createElement("label");
+      priorityLabel.className = "meta-field";
+      priorityLabel.textContent = "優先度";
+
+      const prioritySelect = document.createElement("select");
+      prioritySelect.id = `${id}-priority`;
+
+      ["A", "B", "C"].forEach((value) => {
+        const option = document.createElement("option");
+        option.value = value;
+        option.textContent = value;
+        option.selected = value === priority;
+        prioritySelect.appendChild(option);
+      });
+
+      const dueDateLabel = document.createElement("label");
+      dueDateLabel.className = "meta-field";
+      dueDateLabel.textContent = "期限";
+
+      const dueDateInput = document.createElement("input");
+      dueDateInput.type = "date";
+      dueDateInput.id = `${id}-due-date`;
+      dueDateInput.value = dueDate || "";
+
+      priorityLabel.appendChild(prioritySelect);
+      dueDateLabel.appendChild(dueDateInput);
+      metaRow.appendChild(priorityLabel);
+      metaRow.appendChild(dueDateLabel);
+
+      return metaRow;
+    }
+
+    function addCheckItem(name, savedId, priority = "B", dueDate = "") {
       itemCounter++;
 
-      const id = savedId || `custom-item-${itemCounter}`;
+      const id = savedId || `custom-item-${Date.now()}-${itemCounter}`;
 
       const li = document.createElement("li");
       li.className = "check-item";
       li.dataset.itemId = id;
+      li.dataset.priority = priority || "B";
+      li.dataset.dueDate = dueDate || "";
 
-      li.innerHTML = `
-        <div class="check-row">
-          <input type="checkbox" id="${id}">
-          <label for="${id}">${name}</label>
-          <button type="button" class="delete-button">削除</button>
-        </div>
-        <p id="${id}-time" class="checked-time"></p>
-      `;
+      const checkRow = document.createElement("div");
+      checkRow.className = "check-row";
+
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.id = id;
+
+      const taskMain = document.createElement("div");
+      taskMain.className = "task-main";
+
+      const titleRow = document.createElement("div");
+      titleRow.className = "task-title-row";
+
+      const label = document.createElement("label");
+      label.htmlFor = id;
+      label.className = "task-name";
+      label.textContent = name;
+
+      const badge = document.createElement("span");
+      badge.id = `${id}-priority-badge`;
+      badge.className = `priority-badge priority-${priority.toLowerCase()}`;
+      badge.textContent = priority;
+
+      const summary = document.createElement("div");
+      summary.id = `${id}-summary`;
+      summary.className = "task-meta-line";
+      summary.textContent = formatDueDate(dueDate);
+
+      const deleteButton = document.createElement("button");
+      deleteButton.type = "button";
+      deleteButton.className = "delete-button";
+      deleteButton.textContent = "削除";
+
+      const time = document.createElement("p");
+      time.id = `${id}-time`;
+      time.className = "checked-time";
+
+      titleRow.appendChild(label);
+      titleRow.appendChild(badge);
+      taskMain.appendChild(titleRow);
+      taskMain.appendChild(summary);
+      checkRow.appendChild(checkbox);
+      checkRow.appendChild(taskMain);
+      checkRow.appendChild(deleteButton);
+      li.appendChild(checkRow);
+      li.appendChild(time);
 
       document.getElementById("check-list").appendChild(li);
 
-      updateCheckTime(id, `${id}-time`);
+      setupItemEvents(id);
 
-      li.querySelector(".delete-button").addEventListener("click", () => {
+      deleteButton.addEventListener("click", () => {
         deleteCustomItem(id);
       });
+
+      applyFilter();
 
       return id;
     }
@@ -299,6 +716,7 @@
         return item.id !== id;
       });
 
+      applyFilter();
       saveData();
     }
 
@@ -306,9 +724,10 @@
       const data = getSavedData();
 
       customItems = data.customItems || [];
+      currentFilter = data.filter || "all";
 
       customItems.forEach((item) => {
-        addCheckItem(item.name, item.id);
+        addCheckItem(item.name, item.id, item.priority || "B", item.dueDate || "");
       });
 
       Object.keys(data.checks || {}).forEach((checkboxId) => {
@@ -318,17 +737,25 @@
 
         const checkbox = document.getElementById(checkboxId);
         const timeElement = document.getElementById(`${checkboxId}-time`);
+        const itemElement = checkbox ? checkbox.closest(".check-item") : null;
 
         if (!checkbox || !timeElement) {
           return;
         }
 
-        checkbox.checked = data.checks[checkboxId].checked;
-        timeElement.textContent = data.checks[checkboxId].time;
+        checkbox.checked = Boolean(data.checks[checkboxId].checked);
+        timeElement.textContent = data.checks[checkboxId].time || "";
+
+        if (itemElement) {
+          itemElement.dataset.priority = data.checks[checkboxId].priority || itemElement.dataset.priority || "B";
+          itemElement.dataset.dueDate = data.checks[checkboxId].dueDate || "";
+        }
 
         updateItemStyle(checkbox);
+        updatePriorityBadge(checkboxId);
       });
 
+      setFilter(currentFilter);
       saveData();
     }
 
@@ -344,31 +771,51 @@
         time.textContent = "";
       });
 
+      applyFilter();
       saveData();
     }
 
     document.getElementById("add-item-button").addEventListener("click", () => {
       const input = document.getElementById("new-item-name");
+      const priorityInput = document.getElementById("new-item-priority");
+      const dueDateInput = document.getElementById("new-item-due-date");
       const name = input.value.trim();
 
       if (!name) {
         return;
       }
 
-      const id = addCheckItem(name);
+      const id = addCheckItem(name, undefined, priorityInput.value, dueDateInput.value);
 
       customItems.push({
         id: id,
-        name: name
+        name: name,
+        priority: priorityInput.value,
+        dueDate: dueDateInput.value
       });
 
       input.value = "";
+      priorityInput.value = "B";
+      dueDateInput.value = "";
 
       saveData();
     });
 
-    updateCheckTime("drink-protein", "drink-protein-time");
+    document.getElementById("new-item-name").addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        document.getElementById("add-item-button").click();
+      }
+    });
 
+    document.querySelectorAll(".filter-button").forEach((button) => {
+      button.addEventListener("click", () => {
+        setFilter(button.dataset.filter);
+      });
+    });
+
+    document.getElementById("page-title").textContent = formatTodayTitle(new Date());
+
+    setupItemEvents("drink-protein");
     restoreData();
   </script>
 </body>
