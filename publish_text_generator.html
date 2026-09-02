@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light">
+  <title>公開連絡テキスト生成ツール</title>
+  <style>
+    :root {
+      --bg: #f4f7fb;
+      --surface: rgba(255, 255, 255, 0.92);
+      --surface-strong: #fff;
+      --text: #172033;
+      --muted: #667085;
+      --line: #dce3ed;
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --primary-soft: #eaf1ff;
+      --danger: #c2415b;
+      --shadow: 0 18px 55px rgba(30, 50, 90, 0.10);
+      --radius: 20px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 10% 0%, #dce9ff 0, transparent 31rem),
+        radial-gradient(circle at 100% 12%, #e5e2ff 0, transparent 27rem),
+        var(--bg);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans JP", sans-serif;
+      line-height: 1.6;
+    }
+
+    button, input, textarea { font: inherit; }
+
+    .container {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 48px 0 64px;
+    }
+
+    .hero { margin-bottom: 28px; }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0 0 8px;
+      color: var(--primary);
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .eyebrow::before {
+      content: "";
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--primary);
+      box-shadow: 0 0 0 5px var(--primary-soft);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(27px, 4vw, 42px);
+      line-height: 1.25;
+      letter-spacing: -.03em;
+    }
+
+    .lead { margin: 10px 0 0; color: var(--muted); }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.05fr) minmax(380px, .95fr);
+      gap: 24px;
+      align-items: start;
+    }
+
+    .card {
+      overflow: hidden;
+      border: 1px solid rgba(220, 227, 237, .85);
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(12px);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 22px 24px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .card-header h2 { margin: 0; font-size: 18px; }
+    .card-body { padding: 24px; }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    .field { min-width: 0; }
+    .field.full { grid-column: 1 / -1; }
+
+    label, legend {
+      display: block;
+      margin-bottom: 7px;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .required { color: var(--danger); }
+    .optional { color: var(--muted); font-size: 12px; font-weight: 500; }
+
+    input, textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      outline: none;
+      background: var(--surface-strong);
+      color: var(--text);
+      transition: border-color .18s, box-shadow .18s;
+    }
+
+    input { height: 46px; padding: 0 13px; }
+    textarea { min-height: 92px; padding: 11px 13px; resize: vertical; }
+
+    input:focus, textarea:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px rgba(37, 99, 235, .12);
+    }
+
+    ::placeholder { color: #9aa5b5; }
+
+    fieldset {
+      margin: 0;
+      padding: 0;
+      border: 0;
+    }
+
+    .segmented {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      padding: 5px;
+      border-radius: 13px;
+      background: #eef2f7;
+    }
+
+    .segmented label { position: relative; margin: 0; cursor: pointer; }
+    .segmented input { position: absolute; opacity: 0; pointer-events: none; }
+    .segmented span {
+      display: grid;
+      min-height: 39px;
+      place-items: center;
+      border-radius: 9px;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 750;
+      transition: .18s;
+    }
+
+    .segmented input:checked + span {
+      background: #fff;
+      color: var(--primary);
+      box-shadow: 0 2px 8px rgba(30, 50, 90, .12);
+    }
+
+    .hint { margin: 6px 0 0; color: var(--muted); font-size: 12px; }
+
+    .section-label {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .08em;
+    }
+
+    .section-label::after { content: ""; height: 1px; flex: 1; background: var(--line); }
+
+    .output-card { position: sticky; top: 24px; }
+
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .status::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #22c55e; }
+
+    .output {
+      width: 100%;
+      min-height: 570px;
+      margin: 0;
+      padding: 20px;
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #f8fafc;
+      color: #263247;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      font-size: 14px;
+      line-height: 1.8;
+    }
+
+    .actions { display: flex; gap: 10px; margin-top: 16px; }
+
+    button {
+      min-height: 44px;
+      padding: 0 18px;
+      border: 0;
+      border-radius: 11px;
+      cursor: pointer;
+      font-weight: 750;
+      transition: transform .15s, background .15s, box-shadow .15s;
+    }
+
+    button:hover { transform: translateY(-1px); }
+    button:active { transform: translateY(0); }
+
+    .primary {
+      flex: 1;
+      background: var(--primary);
+      color: #fff;
+      box-shadow: 0 8px 18px rgba(37, 99, 235, .23);
+    }
+
+    .primary:hover { background: var(--primary-dark); }
+    .secondary { background: #edf1f6; color: #48566b; }
+    .secondary:hover { background: #e3e8ef; }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 28px;
+      z-index: 10;
+      padding: 11px 18px;
+      border-radius: 999px;
+      background: #172033;
+      color: #fff;
+      box-shadow: var(--shadow);
+      opacity: 0;
+      transform: translate(-50%, 12px);
+      pointer-events: none;
+      transition: .2s;
+    }
+
+    .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; }
+      .output-card { position: static; }
+      .output { min-height: 440px; }
+    }
+
+    @media (max-width: 600px) {
+      .container { width: min(100% - 20px, 1180px); padding: 28px 0 44px; }
+      .form-grid { grid-template-columns: 1fr; }
+      .field.full, .section-label { grid-column: auto; }
+      .card-header, .card-body { padding: 18px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <header class="hero">
+      <p class="eyebrow">Publish Message Builder</p>
+      <h1>公開連絡テキスト生成ツール</h1>
+      <p class="lead">案件情報を入力すると、共有用のテキストをリアルタイムで生成します。</p>
+    </header>
+
+    <div class="layout">
+      <section class="card" aria-labelledby="input-title">
+        <div class="card-header"><h2 id="input-title">案件情報</h2></div>
+        <div class="card-body">
+          <form id="generator-form" class="form-grid">
+            <div class="field">
+              <label for="testDate">テスト公開日 <span class="required">*</span></label>
+              <input type="date" id="testDate" name="testDate">
+            </div>
+            <div class="field">
+              <label for="publishDate">本番公開日 <span class="required">*</span></label>
+              <input type="date" id="publishDate" name="publishDate">
+            </div>
+            <div class="field full">
+              <label for="reviewer">確認者 <span class="required">*</span></label>
+              <input type="text" id="reviewer" name="reviewer" placeholder="例：鈴木、田中">
+            </div>
+            <div class="field full">
+              <label for="summary">案件概要 <span class="required">*</span></label>
+              <textarea id="summary" name="summary" placeholder="例：キャンペーンページ更新"></textarea>
+            </div>
+            <div class="field full">
+              <label for="productionUrls">本番URL <span class="required">*</span></label>
+              <textarea id="productionUrls" name="productionUrls" placeholder="https://www.example.jp/page/&#10;複数ある場合は改行して入力"></textarea>
+              <p class="hint">1行につき1URL。入力したURLはそのまま本番環境URLにも出力されます。</p>
+            </div>
+            <fieldset class="field full">
+              <legend>テストURLの変換パターン</legend>
+              <div class="segmented">
+                <label><input type="radio" name="stagingType" value="stg-dx" checked><span>stg-dx</span></label>
+                <label><input type="radio" name="stagingType" value="www-stg"><span>www-stg</span></label>
+              </div>
+              <p class="hint">本番URLのホスト名先頭（www）を選択した文字列へ置き換えます。</p>
+            </fieldset>
+            <div class="field full">
+              <label for="manuscriptUrl">原稿URL <span class="required">*</span></label>
+              <textarea id="manuscriptUrl" name="manuscriptUrl" placeholder="https://..."></textarea>
+            </div>
+
+            <div class="section-label">未入力時は「なし」と表示</div>
+
+            <div class="field full">
+              <label for="requestUrl">コンテンツ依頼書URL <span class="optional">任意</span></label>
+              <textarea id="requestUrl" name="requestUrl" placeholder="https://..."></textarea>
+            </div>
+            <div class="field full">
+              <label for="adReviewUrl">広告審査URL <span class="optional">任意</span></label>
+              <textarea id="adReviewUrl" name="adReviewUrl" placeholder="https://..."></textarea>
+            </div>
+            <div class="field full">
+              <label for="approvalUrl">決裁証跡URL <span class="optional">任意</span></label>
+              <textarea id="approvalUrl" name="approvalUrl" placeholder="https://..."></textarea>
+            </div>
+            <div class="field full">
+              <label for="checklistUrl">チェックリストURL <span class="optional">任意</span></label>
+              <textarea id="checklistUrl" name="checklistUrl" placeholder="https://..."></textarea>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <section class="card output-card" aria-labelledby="output-title">
+        <div class="card-header">
+          <h2 id="output-title">生成テキスト</h2>
+          <span class="status">自動更新</span>
+        </div>
+        <div class="card-body">
+          <pre id="output" class="output" aria-live="polite"></pre>
+          <div class="actions">
+            <button type="button" id="copyButton" class="primary">テキストをコピー</button>
+            <button type="button" id="resetButton" class="secondary">リセット</button>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    (() => {
+      'use strict';
+
+      const STORAGE_KEY = 'publishTextGenerator.v1';
+      const form = document.getElementById('generator-form');
+      const output = document.getElementById('output');
+      const copyButton = document.getElementById('copyButton');
+      const resetButton = document.getElementById('resetButton');
+      const toast = document.getElementById('toast');
+      let toastTimer;
+
+      const fields = [
+        'testDate', 'publishDate', 'reviewer', 'summary', 'productionUrls',
+        'manuscriptUrl', 'requestUrl', 'adReviewUrl', 'approvalUrl', 'checklistUrl'
+      ];
+
+      function value(id) {
+        return document.getElementById(id).value.trim();
+      }
+
+      function formatDate(dateValue) {
+        return dateValue ? dateValue.replaceAll('-', '/') : '';
+      }
+
+      function splitLines(text) {
+        return text.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+      }
+
+      function convertToStaging(rawUrl, stagingType) {
+        try {
+          const url = new URL(rawUrl);
+          const parts = url.hostname.split('.');
+          if (['www', 'www-stg', 'stg-dx'].includes(parts[0])) {
+            parts[0] = stagingType;
+          } else {
+            parts.unshift(stagingType);
+          }
+          url.hostname = parts.join('.');
+          return url.toString();
+        } catch (_) {
+          return rawUrl.replace(/^(https?:\/\/)?(?:www|www-stg|stg-dx)(?=\.)/, (match, protocol) => `${protocol || ''}${stagingType}`);
+        }
+      }
+
+      function optionalValue(id) {
+        return value(id) || 'なし';
+      }
+
+      function generateText() {
+        const testDate = formatDate(value('testDate'));
+        const publishDate = formatDate(value('publishDate'));
+        const reviewer = value('reviewer');
+        const stagingType = form.elements.stagingType.value;
+        const productionUrls = splitLines(value('productionUrls'));
+        const stagingUrls = productionUrls.map(url => convertToStaging(url, stagingType));
+
+        const text = `${testDate}　佐藤　${reviewer}
+
+${publishDate}　　佐藤　　${reviewer}
+
+🔳案件詳細
+
+${publishDate}　${value('summary')}
+
+🔳テスト環境URL
+
+${stagingUrls.join('\n')}
+
+🔳本番環境URL
+
+${productionUrls.join('\n')}
+
+🔳原稿
+
+${value('manuscriptUrl')}
+
+🔳コンテンツ依頼書
+
+${optionalValue('requestUrl')}
+
+🔳広告審査
+
+${optionalValue('adReviewUrl')}
+
+🔳決裁証跡
+
+${optionalValue('approvalUrl')}
+
+🔳チェックリスト
+
+${optionalValue('checklistUrl')}`;
+
+        output.textContent = text;
+      }
+
+      function saveForm() {
+        const data = Object.fromEntries(fields.map(id => [id, document.getElementById(id).value]));
+        data.stagingType = form.elements.stagingType.value;
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch (_) {}
+      }
+
+      function restoreForm() {
+        try {
+          const data = JSON.parse(localStorage.getItem(STORAGE_KEY));
+          if (!data) return;
+          fields.forEach(id => {
+            if (typeof data[id] === 'string') document.getElementById(id).value = data[id];
+          });
+          if (['stg-dx', 'www-stg'].includes(data.stagingType)) {
+            form.elements.stagingType.value = data.stagingType;
+          }
+        } catch (_) {}
+      }
+
+      function showToast(message) {
+        clearTimeout(toastTimer);
+        toast.textContent = message;
+        toast.classList.add('show');
+        toastTimer = setTimeout(() => toast.classList.remove('show'), 1800);
+      }
+
+      async function copyText() {
+        try {
+          await navigator.clipboard.writeText(output.textContent);
+          showToast('コピーしました');
+        } catch (_) {
+          const range = document.createRange();
+          range.selectNodeContents(output);
+          const selection = window.getSelection();
+          selection.removeAllRanges();
+          selection.addRange(range);
+          showToast('テキストを選択しました。コピーしてください');
+        }
+      }
+
+      function resetForm() {
+        if (!window.confirm('入力内容をすべて削除しますか？')) return;
+        form.reset();
+        try { localStorage.removeItem(STORAGE_KEY); } catch (_) {}
+        generateText();
+        showToast('入力内容をリセットしました');
+      }
+
+      form.addEventListener('input', () => {
+        generateText();
+        saveForm();
+      });
+      copyButton.addEventListener('click', copyText);
+      resetButton.addEventListener('click', resetForm);
+
+      restoreForm();
+      generateText();
+    })();
+  </script>
+</body>
+</html>
